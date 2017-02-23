@@ -98,7 +98,7 @@ class Chatbot:
 
         movie_title = movie_titles[0]
         
-        if(self.validateTitle(movie_title) == False):
+        if(!self.validateTitle(movie_title)):
           return "I'm not familar with the movie \"" + movie_title + "\". Could you try another movie?"
 
 
