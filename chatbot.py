@@ -10,6 +10,7 @@ import csv
 import math
 import re
 import sys
+import math
 
 import numpy as np
 
@@ -28,6 +29,9 @@ class Chatbot:
       self.Stemmer = PorterStemmer()
       self.read_data()
       self.reccomendations = []
+      self.posPoints = 0
+      self.negPoints = 0
+
 
 
     def greeting(self):
@@ -44,7 +48,6 @@ class Chatbot:
     #############################################################################
 
     def validateNumTitles(self, movie_titles):
-
       """Checks that there is only one title mentioned"""
       if len(movie_titles) != 1:
         if len(movie_titles) == 0:
@@ -54,17 +57,40 @@ class Chatbot:
       else:
         return ""
 
+    def removeYear(self, movie_title):
+      start = movie_title.find( '(' )
+      end = movie_title.find( ')' )
+      if start != -1 and end != -1:
+        return movie_title[0:start-1]
+      return movie_title
+
+    def formatTitle(self, modifiedTitle):
+      modifiedTitle = self.removeYear(modifiedTitle)
+      if "," in modifiedTitle:
+        firstHalf = modifiedTitle.split(", ", 1)[0]
+        secondHalf = modifiedTitle.split(", ", 1)[1]
+        modifiedTitle = secondHalf + " " + firstHalf
+      return modifiedTitle
+
     """Checks that tile is in database"""
     def validateTitle(self, movie_title):
-      for title in self.titles:
-          if movie_title in title[0]:
-            return True
-      return False
+      movie_title = movie_title.lower()
+
+      for title in range(len(self.titles)):
+          modifiedTitle = self.titles[title][0].lower()
+          modifiedTitle = self.formatTitle(modifiedTitle)
+          if movie_title in modifiedTitle:
+            print(self.titles[title])
+            return title
+      return -1
 
 
     """Removes words in title and quotes"""
     def formatInput(self, input, movie_title):
       quotesRemoved = input.replace("\"", "")
+      quotesRemoved = quotesRemoved.replace(".", "")
+      quotesRemoved = quotesRemoved.replace(",", "")
+      quotesRemoved = quotesRemoved.replace("!", "")
       words = quotesRemoved.split()
 
       """Don't consider sentiment of title words"""
@@ -97,23 +123,18 @@ class Chatbot:
           return response
 
         movie_title = movie_titles[0]
-        
-        if(!self.validateTitle(movie_title)):
+        movieIndex = self.validateTitle(movie_title)
+        if(movieIndex == -1):
           return "I'm not familar with the movie \"" + movie_title + "\". Could you try another movie?"
+        oldTitle = movie_title
+        movie_title = self.titles[movieIndex][0]
+        movie_title = self.formatTitle(movie_title)
 
-
-    
-
-
-        self.preferences = []
 
         recommendedMode = False
         positivity = 0
         negativity = 0
         dataPoints = 0
-        posPoints = 0
-        negPoints = 0
-
 
         # if(recommendedMode):
         #   if(input == "Y"):
@@ -121,10 +142,11 @@ class Chatbot:
         #   else:
         #     return "Nice chatting. Have a good one"
 
-        words = self.formatInput(input, movie_title)
+        words = self.formatInput(input, oldTitle)
         
         for i, word in enumerate(words):
           word = self.Stemmer.stem(word.lower())
+
 
           if (word in self.sentiment):
             sentiment = self.sentiment[word]
@@ -152,31 +174,30 @@ class Chatbot:
             print(i, word, sentiment)
 
         titleRating = 0
-        print(positivity, negativity)
         if (positivity > negativity):
-          posPoints += 1
+          self.posPoints += 1
           titleRating = 1
-          response = "You liked \"" + movie_titles[0] + "\". Thank you. "
+          response = "You liked \"" + movie_title + "\". Thank you. "
         elif(negativity > positivity):
-          negPoints += 1
+          self.negPoints += 1
           titleRating = -1
-          response = "You disliked \"" + movie_titles[0] + "\". Thank you. "
+          response = "You disliked \"" + movie_title + "\". Thank you. "
         elif(positivity == 0 and negativity == 0):
-          response = "How did you feel about " + movie_titles[0] + "? (Please mention " + movie_titles[0] + " in your response)"
+          response = "How did you feel about " + movie_title + "? (Please mention " + movie_title + " in your response)"
           return response
         elif(positivity == negativity):
-          response = "I couldn't decipher your sentiment towards " + movie_titles[0] + ". Please try again."
+          response = "I couldn't decipher your sentiment towards " + movie_title + ". Please try again."
           return response
 
-        dataPoints += 1
-        ratingTuple = (movie_titles[0], titleRating)
+        ratingTuple = (movieIndex, titleRating)
         self.reccomendations.append(ratingTuple)
+        print(len(self.reccomendations), self.posPoints, self.negPoints)
 
-
-        if (dataPoints >= 5):
-          if (posPoints == 0):
+        if (len(self.reccomendations) >= 5):
+          print(self.reccomendations)
+          if (self.posPoints == 0):
             response += "I need at least one positive review before making my assessment"
-          elif(negPoints == 0):
+          elif(self.negPoints == 0):
             response += "I need at least one negative review before making my assessment"
           else:
             reccomendation = self.recommend()
@@ -203,52 +224,79 @@ class Chatbot:
       self.titles, self.ratings = ratings()
       reader = csv.reader(open('data/sentiment.txt', 'rb'))
       self.sentiment = dict(reader)
-      # for key in self.sentiment:
-      #   newKey = self.Stemmer.stem(key.lower())
-      #   self.sentiment[newKey] = self.sentiment.pop(key)
+      for key in self.sentiment.keys():
+        newKey = self.Stemmer.stem(key.lower())
+        self.sentiment[newKey] = self.sentiment.pop(key)
 
-
-      self.binarize()
+      # print(self.recommend())
 
 
     def binarize(self):
       """Modifies the ratings matrix to make all of the ratings binary"""
 
-
-      # for movie in range(len(self.ratings)):
-      #   for rating in range(len(self.ratings[movie])):
-      #     value = self.ratings[movie][rating]
-      #     if (value >= 3):
-      #       self.ratings[movie][rating] = 1
-      #     elif(value == 0):
-      #       self.ratings[movie][rating] = 0
-      #     elif(value <= 2.5):
-      #       self.ratings[movie][rating] = -1
-
-      pass
-
-
-    def distance(self, u, v):
-      """Calculates a given distance function between vectors u and v"""
-      # TODO: Implement the distance function between vectors u and v]
-      # Note: you can also think of this as computing a similarity measure
+      for movie in range(len(self.ratings)):
+        for rating in range(len(self.ratings[movie])):
+          value = self.ratings[movie][rating]
+          if (value >= 3):
+            self.ratings[movie][rating] = 1
+          elif(value == 0):
+            self.ratings[movie][rating] = 0
+          elif(value <= 2.5):
+            self.ratings[movie][rating] = -1
 
       pass
 
 
-    def recommend(self, u):
+    def distance(self, title1, title2):
+      """Calculates a given distance function between rating vectors of two titles"""
+      vector1 = self.ratings[title1]
+      vector2 = self.ratings[title2]
+
+      magnitude1 = 0
+      magnitude2 = 0
+
+      for rating in vector1:
+        magnitude1 += rating*rating
+      for rating in vector2:
+        magnitude2 += rating*rating
+
+      magnitude1 = math.sqrt(magnitude1)
+      magnitude2 = math.sqrt(magnitude2)
+
+      numerator = 0
+      for index in range(len(vector2)):
+        numerator += vector2[index] * vector1[index]
+
+      return numerator/(magnitude2*magnitude1)
+
+    def recommend(self):
       """Generates a list of movies based on the input vector u using
       collaborative filtering"""
       # TODO: Implement a recommendation function that takes a user vector u
       # and outputs a list of movies recommended by the chatbot
 
-      for pair in self.reccomendations:
-        title = pair[0]
-        rating = pair[1]
+      self.reccomendations = [(0, 1), (1580, 1), (7013, 1), (6282, 1), (3460, -1)]
 
 
 
-      return "Incomplete reccomendations"
+      self.binarize()
+      curTitle = -1
+      curMax = -10000
+      for movie in range(len(self.ratings)):
+        numerator = 0
+        denominator = 0
+        for pair in self.reccomendations:
+          title = pair[0]
+          rating = pair[1]
+          similarity = self.distance(movie, title)
+          numerator += similarity * rating
+          denominator += similarity
+        rating = numerator / denominator
+        if (rating > curMax):
+          curTitle = movie
+          curMax = rating
+
+      return self.titles[curTitle]
 
 
     #############################################################################
