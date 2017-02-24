@@ -28,7 +28,7 @@ class Chatbot:
       self.is_turbo = is_turbo
       self.Stemmer = PorterStemmer()
       self.read_data()
-      self.reccomendations = []
+      self.recommendations = []
       self.posPoints = 0
       self.negPoints = 0
 
@@ -138,7 +138,7 @@ class Chatbot:
 
         # if(recommendedMode):
         #   if(input == "Y"):
-        #     return "Reccomending another"
+        #     return "recommending another"
         #   else:
         #     return "Nice chatting. Have a good one"
 
@@ -190,17 +190,17 @@ class Chatbot:
           return response
 
         ratingTuple = (movieIndex, titleRating)
-        self.reccomendations.append(ratingTuple)
-        print(len(self.reccomendations), self.posPoints, self.negPoints)
+        self.recommendations.append(ratingTuple)
+        print(len(self.recommendations), self.posPoints, self.negPoints)
 
-        if (len(self.reccomendations) >= 5):
-          print(self.reccomendations)
+        if (len(self.recommendations) >= 5):
+          print(self.recommendations)
           if (self.posPoints == 0):
             response += "I need at least one positive review before making my assessment"
           elif(self.negPoints == 0):
             response += "I need at least one negative review before making my assessment"
           else:
-            reccomendation = self.recommend()
+            recommendation = self.recommend()
             recommendMode = True
             response = "That's enough for me to make a recommendation. I suggest you watch \"" + recommendation + "\". Would you like to hear another recommendation? [Y/N]"
         else:
@@ -275,7 +275,7 @@ class Chatbot:
       # TODO: Implement a recommendation function that takes a user vector u
       # and outputs a list of movies recommended by the chatbot
 
-      self.reccomendations = [(0, 1), (1580, 1), (7013, 1), (6282, 1), (3460, -1)]
+      self.recommendations = [(0, 1), (1580, 1), (7013, 1), (6282, 1), (3460, -1)]
 
 
 
@@ -285,7 +285,7 @@ class Chatbot:
       for movie in range(len(self.ratings)):
         numerator = 0
         denominator = 0
-        for pair in self.reccomendations:
+        for pair in self.recommendations:
           title = pair[0]
           rating = pair[1]
           similarity = self.distance(movie, title)
