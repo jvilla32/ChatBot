@@ -73,6 +73,7 @@ class Chatbot:
       return modifiedTitle
 
     """Checks that tile is in database"""
+    # TODO: fix
     def validateTitle(self, movie_title):
       movie_title = movie_title.lower()
 
@@ -129,7 +130,6 @@ class Chatbot:
         oldTitle = movie_title
         movie_title = self.titles[movieIndex][0]
         movie_title = self.formatTitle(movie_title)
-
 
         recommendedMode = False
         positivity = 0
