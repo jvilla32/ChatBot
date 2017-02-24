@@ -75,11 +75,11 @@ class Chatbot:
     """Checks that tile is in database"""
     # TODO: fix
     def validateTitle(self, movie_title):
-      movie_title = movie_title.lower()
+      # movie_title = movie_title.lower()
 
       for title in range(len(self.titles)):
-          modifiedTitle = self.titles[title][0].lower()
-          modifiedTitle = self.formatTitle(modifiedTitle)
+          modifiedTitle = self.titles[title][0] #.lower()
+          #modifiedTitle = self.formatTitle(modifiedTitle)
           if movie_title in modifiedTitle:
             print(self.titles[title])
             return title
