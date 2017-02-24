@@ -11,6 +11,7 @@ import math
 import re
 import sys
 import math
+import pdb
 
 import numpy as np
 
@@ -72,14 +73,24 @@ class Chatbot:
         modifiedTitle = secondHalf + " " + firstHalf
       return modifiedTitle
 
-    """Checks that tile is in database"""
+    """Checks that title is in database"""
     def validateTitle(self, movie_title):
-      # movie_title = movie_title.lower()
+      ARTICLES = ['The', 'A', 'An']
 
       for title in range(len(self.titles)):
-          modifiedTitle = self.titles[title][0] #.lower()
-          #modifiedTitle = self.formatTitle(modifiedTitle)
-          if movie_title in modifiedTitle:
+          databaseTitle = self.titles[title][0] #.lower()
+          databaseTitle = re.sub('\(\d\d\d\d\)', '', databaseTitle)
+          #modifiedTitle = self.formatTitle(databaseTitle)
+
+          # If the movie begins with an article, moves it to the end 
+          # The Fast and Furious -> Fast and Furious, The
+          titleWords = movie_title.split(' ')
+          for article in ARTICLES:
+            if titleWords[0].lower() == article.lower():
+              movie_title = ' '.join(titleWords[1:])
+              movie_title += ', ' + article
+
+          if movie_title.strip() == databaseTitle.strip():
             print(self.titles[title])
             return title
       return -1
@@ -129,7 +140,6 @@ class Chatbot:
         oldTitle = movie_title
         movie_title = self.titles[movieIndex][0]
         movie_title = self.formatTitle(movie_title)
-
 
         recommendedMode = False
         positivity = 0
