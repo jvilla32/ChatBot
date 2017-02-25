@@ -242,15 +242,25 @@ class Chatbot:
 
         if (word in self.sentiment):
           sentiment = self.sentiment[word]
+
+          booster2 = False
+          booster = False
+          if (word in ["love", "hate", "favorite"]):
+            booster = True
+
           negated = False
           oneBack = i - 1
           twoBack = i - 2
           if (oneBack >= 0 and oneBack < len(words)):
             if any(neg in words[oneBack] for neg in ["not", "n't", "no"]):
               negated = True
+            if (words[oneBack].lower() in ["really", "very"]):
+              booster2 = True
           elif (twoBack >= 0 and twoBack < len(words)):
             if any(neg in words[twoBack] for neg in ["not", "n't", "no"]):
               negated = True
+            if (words[twoBack].lower() in ["really", "very"]):
+              booster2 = True
 
           if (negated):
             if (sentiment == "pos"):
@@ -258,10 +268,16 @@ class Chatbot:
             elif (sentiment == "neg"):
               sentiment = "pos"
 
+          boostScore = 1
+          if (booster and self.is_turbo):
+            boostScore += 1
+          if (booster2 and self.is_turbo):
+            boostScore += 1
+
           if (sentiment == "pos"):
-            positivity += 1
+            positivity += 1*boostScore
           elif (sentiment == "neg"):
-            negativity += 1
+            negativity += 1*boostScore
 
           print(i, word, sentiment)
 
@@ -318,7 +334,7 @@ class Chatbot:
         newKey = self.Stemmer.stem(key.lower())
         self.sentiment[newKey] = self.sentiment.pop(key)
 
-      print(self.recommend())
+      # print(self.recommend())
 
 
     def binarize(self):
