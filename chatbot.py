@@ -76,9 +76,10 @@ class Chatbot:
     """Checks that title is in database"""
     def validateTitle(self, movie_title):
       ARTICLES = ['The', 'A', 'An']
+      titlesIndices = []
 
       for title in range(len(self.titles)):
-          databaseTitle = self.titles[title][0] #.lower()
+          databaseTitle = self.titles[title][0].lower()
           databaseTitle = re.sub('\(\d\d\d\d\)', '', databaseTitle)
           #modifiedTitle = self.formatTitle(databaseTitle)
 
@@ -88,11 +89,23 @@ class Chatbot:
           for article in ARTICLES:
             if titleWords[0].lower() == article.lower():
               movie_title = ' '.join(titleWords[1:])
-              movie_title += ', ' + article
+              movie_title += ', ' + article              
 
-          if movie_title.strip() == databaseTitle.strip():
-            print(self.titles[title])
-            return title
+          movie_title = movie_title.lower().strip()
+          databaseTitle = databaseTitle.strip()
+          #pdb.set_trace()
+          if not self.is_turbo:
+            if movie_title == databaseTitle:
+              print(self.titles[title])
+              return title
+          else: # disambiguation of movie titles for series and year ambiguities
+            if movie_title == databaseTitle or movie_title in databaseTitle:
+              titlesIndices.append(title)
+              
+      if self.is_turbo:
+        if len(titlesIndices) > 0:
+          return titlesIndices
+
       return -1
 
 
@@ -126,7 +139,7 @@ class Chatbot:
       #############################################################################
       if self.is_turbo == True:
         response = 'processed %s in creative mode!!' % input
-      else:
+      #else:
 
         movie_titles = re.findall('"([^"]*)"', input)
         response = self.validateNumTitles(movie_titles)
@@ -137,9 +150,22 @@ class Chatbot:
         movieIndex = self.validateTitle(movie_title)
         if(movieIndex == -1):
           return "I'm not familar with the movie \"" + movie_title + "\". Could you try another movie?"
-        oldTitle = movie_title
-        movie_title = self.titles[movieIndex][0]
-        movie_title = self.formatTitle(movie_title)
+        else:
+          if self.is_turbo: # disambiguation of movie titles for series and year ambiguities
+            if len(movieIndex) == 1:
+              oldTitle = movie_title
+              movie_title = self.titles[movieIndex[0]][0]
+              movie_title = self.formatTitle(movie_title)
+            else:
+              choices = ""
+              for i in range(0, len(movieIndex)-1):
+                choices += str(self.titles[movieIndex[i]][0]) + ", "
+              choices += "or " + str(self.titles[movieIndex[len(movieIndex)-1]][0])
+              return "Can you repeat your response, specifying " + choices + "?"  #TODO: ask for clarification here? how?
+          else:
+            oldTitle = movie_title
+            movie_title = self.titles[movieIndex][0]
+            movie_title = self.formatTitle(movie_title)
 
         recommendedMode = False
         positivity = 0
