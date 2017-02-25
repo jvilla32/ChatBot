@@ -318,7 +318,7 @@ class Chatbot:
         newKey = self.Stemmer.stem(key.lower())
         self.sentiment[newKey] = self.sentiment.pop(key)
 
-      # print(self.recommend())
+      print(self.recommend())
 
 
     def binarize(self):
@@ -333,9 +333,6 @@ class Chatbot:
             self.ratings[movie][rating] = 0
           elif(value <= 2.5):
             self.ratings[movie][rating] = -1
-
-      pass
-
 
     def distance(self, title1, title2):
       """Calculates a given distance function between rating vectors of two titles"""
@@ -367,26 +364,34 @@ class Chatbot:
 
       self.recommendations = [(0, 1), (1580, 1), (7013, 1), (6282, 1), (3460, -1)]
 
-
-
+      self.allRatings = []
+      
       self.binarize()
-      curTitle = -1
-      curMax = -10000
+
+      takenTitles = []
+      for pair in self.recommendations:
+        takenTitles.append(pair[0])
+
       for movie in range(len(self.ratings)):
         numerator = 0
-        denominator = 0
         for pair in self.recommendations:
           title = pair[0]
           rating = pair[1]
           similarity = self.distance(movie, title)
           numerator += similarity * rating
-          denominator += similarity
-        rating = numerator / denominator
-        if (rating > curMax):
-          curTitle = movie
-          curMax = rating
+        rating = numerator
+        self.allRatings.append((movie, rating))
 
-      return self.titles[curTitle]
+
+      self.allRatings = sorted(self.allRatings, key=lambda x: x[1], reverse=True)
+      for rating in self.allRatings:
+        movieIndex = rating[0]
+        if movieIndex not in takenTitles:
+          return self.titles[movieIndex]
+
+      return "None"
+
+
 
 
     #############################################################################
