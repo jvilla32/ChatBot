@@ -161,6 +161,7 @@ class Chatbot:
               for i in range(0, len(movieIndex)-1):
                 choices += str(self.titles[movieIndex[i]][0]) + ", "
               choices += "or " + str(self.titles[movieIndex[len(movieIndex)-1]][0])
+              choices = re.sub('\(\d\d\d\d\)', '', choices)
               return "Can you repeat your response, specifying " + choices + "?"  #TODO: ask for clarification here? how?
           else:
             oldTitle = movie_title
