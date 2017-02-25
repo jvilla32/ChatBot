@@ -32,6 +32,9 @@ class Chatbot:
       self.recommendations = []
       self.posPoints = 0
       self.negPoints = 0
+      self.prevResponse = None
+      self.responseContext = None
+      self.potentialTitles = None
 
 
 
@@ -99,7 +102,10 @@ class Chatbot:
               print(self.titles[title])
               return title
           else: # disambiguation of movie titles for series and year ambiguities
-            if movie_title == databaseTitle or movie_title in databaseTitle:
+            matchRegex = "(?:^| )%s(?:$| )" % movie_title
+            matches = re.findall(matchRegex, databaseTitle)
+            if len(matches) > 0:
+            #if movie_title == databaseTitle or movie_title in databaseTitle:
               titlesIndices.append(title)
               
       if self.is_turbo:
@@ -110,8 +116,9 @@ class Chatbot:
 
 
     """Removes words in title and quotes"""
+    #TODO: get rid of movie_title?
     def formatInput(self, input, movie_title):
-      quotesRemoved = input.replace("\"", "")
+      '''quotesRemoved = input.replace("\"", "")
       quotesRemoved = quotesRemoved.replace(".", "")
       quotesRemoved = quotesRemoved.replace(",", "")
       quotesRemoved = quotesRemoved.replace("!", "")
@@ -119,11 +126,45 @@ class Chatbot:
 
       """Don't consider sentiment of title words"""
       for word in movie_title.split():
-        words.remove(word)
-      return words
+        words.remove(word)'''
+      words = re.sub('"([^"]*)"', '', input)
+      words = re.sub('[.,!]', '', input)
+      return words.split()
             
 
-
+    def processDisambiguation(self, input):
+      """Processes the response in context that it is disambiguating a previous response"""
+      movie_title = None
+      movieIndex = None
+      year = re.findall('^\d\d\d\d$', input)
+      if len(year) == 1:
+        yearFormat = "(%s)" % year[0]
+        for index in self.potentialTitles:
+          movie = self.titles[index][0]
+          if yearFormat in movie:
+            movie_title = re.sub('\(\d\d\d\d\)', '', movie)
+            movieIndex = index
+            input = re.sub('"([^"]*)"', '"'+movie_title.strip()+'"', self.prevResponse)
+            self.responseContext = None
+            self.prevResponse = None
+            self.potentialTitles = None
+            break
+      else:
+        for index in self.potentialTitles:
+          movie = self.titles[index][0]
+          if input in movie:
+            movie_title = re.sub('\(\d\d\d\d\)', '', movie)
+            movieIndex = index
+            input = re.sub('"([^"]*)"', '"'+movie_title.strip()+'"', self.prevResponse)
+            self.responseContext = None
+            self.prevResponse = None
+            self.potentialTitles = None
+            break
+      
+      if movie_title == None:
+        return (-1, "Please return a valid choice or year")
+      
+      return (1, movie_title, movieIndex, input)
 
 
     def process(self, input):
@@ -137,10 +178,23 @@ class Chatbot:
       # calling other functions. Although modular code is not graded, it is       #
       # highly recommended                                                        #
       #############################################################################
+      movie_title = None
+      oldTitle = None
+      movieIndex = None
+
       if self.is_turbo == True:
         response = 'processed %s in creative mode!!' % input
-      #else:
 
+      if self.is_turbo and self.responseContext != None:  # special responses
+        if self.responseContext == "disambiguation":
+          response = self.processDisambiguation(input)
+          if response[0] == -1:
+            return response[1]
+          else:
+            movie_title = response[1]
+            movieIndex = response[2]
+            input = response[3]
+      else: # treat response as normal
         movie_titles = re.findall('"([^"]*)"', input)
         response = self.validateNumTitles(movie_titles)
         if (response != ""):
@@ -159,92 +213,91 @@ class Chatbot:
             else:
               choices = ""
               for i in range(0, len(movieIndex)-1):
-                choices += str(self.titles[movieIndex[i]][0]) + ", "
+                choices += str(self.titles[movieIndex[i]][0]).strip() + ", " # TODO: fix extra space before comma
               choices += "or " + str(self.titles[movieIndex[len(movieIndex)-1]][0])
-              choices = re.sub('\(\d\d\d\d\)', '', choices)
-              return "Can you repeat your response, specifying " + choices + "?"  #TODO: ask for clarification here? how?
+              self.prevResponse = input
+              self.responseContext = "disambiguation"
+              self.potentialTitles = movieIndex
+              return "Did you mean " + choices + " (please provide the full name or the year)?"  #TODO: ask for clarification here, account for asking for year
           else:
             oldTitle = movie_title
             movie_title = self.titles[movieIndex][0]
             movie_title = self.formatTitle(movie_title)
 
-        recommendedMode = False
-        positivity = 0
-        negativity = 0
-        dataPoints = 0
+      recommendedMode = False
+      positivity = 0
+      negativity = 0
+      dataPoints = 0
 
-        # if(recommendedMode):
-        #   if(input == "Y"):
-        #     return "recommending another"
-        #   else:
-        #     return "Nice chatting. Have a good one"
+      # if(recommendedMode):
+      #   if(input == "Y"):
+      #     return "recommending another"
+      #   else:
+      #     return "Nice chatting. Have a good one"
 
-        words = self.formatInput(input, oldTitle)
+      words = self.formatInput(input, oldTitle)
         
-        for i, word in enumerate(words):
-          word = self.Stemmer.stem(word.lower())
+      for i, word in enumerate(words):
+        word = self.Stemmer.stem(word.lower())
 
+        if (word in self.sentiment):
+          sentiment = self.sentiment[word]
+          negated = False
+          oneBack = i - 1
+          twoBack = i - 2
+          if (oneBack >= 0 and oneBack < len(words)):
+            if any(neg in words[oneBack] for neg in ["not", "n't", "no"]):
+              negated = True
+          elif (twoBack >= 0 and twoBack < len(words)):
+            if any(neg in words[twoBack] for neg in ["not", "n't", "no"]):
+              negated = True
 
-          if (word in self.sentiment):
-            sentiment = self.sentiment[word]
-            negated = False
-            oneBack = i - 1
-            twoBack = i - 2
-            if (oneBack >= 0 and oneBack < len(words)):
-              if any(neg in words[oneBack] for neg in ["not", "n't", "no"]):
-                negated = True
-            elif (twoBack >= 0 and twoBack < len(words)):
-              if any(neg in words[twoBack] for neg in ["not", "n't", "no"]):
-                negated = True
-
-            if (negated):
-              if (sentiment == "pos"):
-                sentiment = "neg"
-              elif (sentiment == "neg"):
-                sentiment = "pos"
-
+          if (negated):
             if (sentiment == "pos"):
-              positivity += 1
+              sentiment = "neg"
             elif (sentiment == "neg"):
-              negativity += 1
+              sentiment = "pos"
 
-            print(i, word, sentiment)
+          if (sentiment == "pos"):
+            positivity += 1
+          elif (sentiment == "neg"):
+            negativity += 1
 
-        titleRating = 0
-        if (positivity > negativity):
-          self.posPoints += 1
-          titleRating = 1
-          response = "You liked \"" + movie_title + "\". Thank you. "
-        elif(negativity > positivity):
-          self.negPoints += 1
-          titleRating = -1
-          response = "You disliked \"" + movie_title + "\". Thank you. "
-        elif(positivity == 0 and negativity == 0):
-          response = "How did you feel about " + movie_title + "? (Please mention " + movie_title + " in your response)"
-          return response
-        elif(positivity == negativity):
-          response = "I couldn't decipher your sentiment towards " + movie_title + ". Please try again."
-          return response
+          print(i, word, sentiment)
 
-        ratingTuple = (movieIndex, titleRating)
-        self.recommendations.append(ratingTuple)
-        print(len(self.recommendations), self.posPoints, self.negPoints)
+          #TODO check indentation
+          titleRating = 0
+          if (positivity > negativity):
+            self.posPoints += 1
+            titleRating = 1
+            response = "You liked \"" + movie_title + "\". Thank you. "
+          elif(negativity > positivity):
+            self.negPoints += 1
+            titleRating = -1
+            response = "You disliked \"" + movie_title + "\". Thank you. "
+          elif(positivity == 0 and negativity == 0):
+            response = "How did you feel about " + movie_title + "? (Please mention " + movie_title + " in your response)"
+            return response
+          elif(positivity == negativity):
+            response = "I couldn't decipher your sentiment towards " + movie_title + ". Please try again."
+            return response
 
-        if (len(self.recommendations) >= 5):
-          print(self.recommendations)
-          if (self.posPoints == 0):
-            response += "I need at least one positive review before making my assessment"
-          elif(self.negPoints == 0):
-            response += "I need at least one negative review before making my assessment"
+          ratingTuple = (movieIndex, titleRating)
+          self.recommendations.append(ratingTuple)
+          print(len(self.recommendations), self.posPoints, self.negPoints)
+
+          if (len(self.recommendations) >= 5):
+            print(self.recommendations)
+            if (self.posPoints == 0):
+              response += "I need at least one positive review before making my assessment"
+            elif(self.negPoints == 0):
+              response += "I need at least one negative review before making my assessment"
+            else:
+              recommendation = self.recommend()
+              recommendMode = True
+              response = "That's enough for me to make a recommendation. I suggest you watch \"" + recommendation + "\". Would you like to hear another recommendation? [Y/N]"
           else:
-            recommendation = self.recommend()
-            recommendMode = True
-            response = "That's enough for me to make a recommendation. I suggest you watch \"" + recommendation + "\". Would you like to hear another recommendation? [Y/N]"
-        else:
-          response += "Tell me about another movie you have seen"
-
-
-
+            response += "Tell me about another movie you have seen"
 
       return response
 
