@@ -153,6 +153,37 @@ class Chatbot:
       
       return (1, movie_title, movieIndex, input)
 
+    def processSentiment(self, input):
+      """Identifies and responds to emotions, if any."""
+      emotionKeywords = { "anger": set(["angry", "furious", "infuriate", "mad", "outrage", "rage"]), #unhappy?
+                          "happy": set(["happy", "joyful", "joy", "enjoy", "content", "delight", "delightful", "ecstatic", "glad", "gladden", "dazzle"])
+                        }
+      emotion = None
+      negated = False
+      booster = False
+      words = input.split()
+
+      for i, word in enumerate(input):
+        #word = self.Stemmer.stem(word.lower())
+        oneBack = i - 1
+        twoBack = i - 2
+        if (oneBack >= 0 and oneBack < len(words)):
+          if any(neg in words[oneBack] for neg in ["not", "n't", "no"]):
+            negated = True
+        elif (twoBack >= 0 and twoBack < len(words)):
+          if any(neg in words[twoBack] for neg in ["not", "n't", "no"]):
+            negated = True
+        for emotionType, keywords in emotionKeywords.iteritems():
+          if word in keywords or self.Stemmer.stem(word.lower()) in keywords:
+            emotion = emotionType
+
+      if (emotion == "anger" and not negated) or (emotion == "happy" and negated): # angry
+        return "I'm sorry to hear that! Maybe you can tell me what movies you like/dislike so I can suggest a good movie for a night in to recuperate."
+      elif (emotion == "happy" and not negated) or (emotion == "anger" and negated): # happy
+        return "I'm happy to hear that! Maybe you can tell me what moves you like/dislike so I can suggest a good movie to further boost your spirits."
+      
+      return "Sorry, I don't understand. Tell me about a movie that you have seen?"
+
 
     def process(self, input):
       """Takes the input string from the REPL and call delegated functions
@@ -184,7 +215,7 @@ class Chatbot:
         movie_titles = re.findall('"([^"]*)"', input)
         response = self.validateNumTitles(movie_titles)
         if (response != ""):
-          return response
+          return self.processSentiment(input)
 
         movie_title = movie_titles[0]
         movieIndex = self.validateTitle(movie_title)
