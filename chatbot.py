@@ -156,7 +156,7 @@ class Chatbot:
     def processSentiment(self, input):
       """Identifies and responds to emotions, if any."""
       emotionKeywords = { "anger": set(["angry", "furious", "infuriate", "mad", "outrage", "rage", "upset"]), 
-                          "happy": set(["happy", "joyful", "joy", "enjoy", "content", "delight", "delightful", "ecstatic", "glad", "gladden", "dazzle"])
+                          "happy": set(["happy", "joyful", "joy", "enjoy", "content", "delight", "delightful", "ecstatic", "glad", "gladden", "dazzle"]),
                           "sad": set(["sad", "depress", "depression", "unhappy", "disappoint", "disappointment"])
                         }
       emotion = None
