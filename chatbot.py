@@ -164,7 +164,7 @@ class Chatbot:
       booster = False
       words = input.split()
 
-      for i, word in enumerate(input):
+      for i, word in enumerate(words):
         #word = self.Stemmer.stem(word.lower())
         oneBack = i - 1
         twoBack = i - 2
@@ -175,8 +175,9 @@ class Chatbot:
           if any(neg in words[twoBack] for neg in ["not", "n't", "no", "never"]):
             negated = True
 
+        #pdb.set_trace()
         for emotionType, keywords in emotionKeywords.iteritems():
-          if word in keywords or self.Stemmer.stem(word.lower()) in keywords:
+          if word.lower() in keywords or self.Stemmer.stem(word.lower()) in keywords:
             emotion = emotionType
 
       if (emotion == "anger" and not negated): # angry
