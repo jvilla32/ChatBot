@@ -155,8 +155,9 @@ class Chatbot:
 
     def processSentiment(self, input):
       """Identifies and responds to emotions, if any."""
-      emotionKeywords = { "anger": set(["angry", "furious", "infuriate", "mad", "outrage", "rage"]), #unhappy?
+      emotionKeywords = { "anger": set(["angry", "furious", "infuriate", "mad", "outrage", "rage", "upset"]), 
                           "happy": set(["happy", "joyful", "joy", "enjoy", "content", "delight", "delightful", "ecstatic", "glad", "gladden", "dazzle"])
+                          "sad": set(["sad", "depress", "depression", "unhappy", "disappoint", "disappointment"])
                         }
       emotion = None
       negated = False
@@ -168,19 +169,22 @@ class Chatbot:
         oneBack = i - 1
         twoBack = i - 2
         if (oneBack >= 0 and oneBack < len(words)):
-          if any(neg in words[oneBack] for neg in ["not", "n't", "no"]):
+          if any(neg in words[oneBack] for neg in ["not", "n't", "no", "never"]):
             negated = True
         elif (twoBack >= 0 and twoBack < len(words)):
-          if any(neg in words[twoBack] for neg in ["not", "n't", "no"]):
+          if any(neg in words[twoBack] for neg in ["not", "n't", "no", "never"]):
             negated = True
+
         for emotionType, keywords in emotionKeywords.iteritems():
           if word in keywords or self.Stemmer.stem(word.lower()) in keywords:
             emotion = emotionType
 
-      if (emotion == "anger" and not negated) or (emotion == "happy" and negated): # angry
-        return "I'm sorry to hear that! Maybe you can tell me what movies you like/dislike so I can suggest a good movie for a night in to recuperate."
-      elif (emotion == "happy" and not negated) or (emotion == "anger" and negated): # happy
-        return "I'm happy to hear that! Maybe you can tell me what moves you like/dislike so I can suggest a good movie to further boost your spirits."
+      if (emotion == "anger" and not negated): # angry
+        return "I'm sorry to hear that. Maybe you can tell me what movies you like/dislike so I can suggest a good movie to help calm you down."
+      elif (emotion == "happy" and not negated) or ((emotion == "anger" or emotion == "sad") and negated): # happy
+        return "I'm happy to hear that! Maybe you can tell me what movies you like/dislike so I can suggest a good movie to further boost your spirits."
+      elif (emotion == "sad" and not negated) or (emotion == "happy" and negated):
+        return "I'm sorry to hear that. Maybe you can tell me what movies you like/dislike so I can suggest a good movie to cheer you up."
       
       return "Sorry, I don't understand. Tell me about a movie that you have seen?"
 
@@ -202,7 +206,7 @@ class Chatbot:
       if self.is_turbo == True:
         response = 'processed %s in creative mode!!' % input
 
-      if self.is_turbo and self.responseContext != None:  # special responses
+      if self.is_turbo and self.responseContext != None:  # special responses with context
         if self.responseContext == "disambiguation":
           response = self.processDisambiguation(input)
           if response[0] == -1:
