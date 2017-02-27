@@ -5,6 +5,7 @@
 # v.1.0.2
 # Original Python code by Ignacio Cases (@cases)
 # Ported to Java by Raghav Gupta (@rgupta93) and Jennifer Lu (@jenylu)
+# Assignment by Julian Vilalpando, Regina Nguyen, Thomas Liu
 ######################################################################
 import csv
 import math
