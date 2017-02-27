@@ -175,7 +175,6 @@ class Chatbot:
           if any(neg in words[twoBack] for neg in ["not", "n't", "no", "never"]):
             negated = True
 
-        #pdb.set_trace()
         for emotionType, keywords in emotionKeywords.iteritems():
           if word.lower() in keywords or self.Stemmer.stem(word.lower()) in keywords:
             emotion = emotionType
@@ -183,8 +182,8 @@ class Chatbot:
       if (emotion == "anger" and not negated): # angry
         return "I'm sorry to hear that. Maybe you can tell me what movies you like/dislike so I can suggest a good movie to help calm you down."
       elif (emotion == "happy" and not negated) or ((emotion == "anger" or emotion == "sad") and negated): # happy
-        return "I'm happy to hear that! Maybe you can tell me what movies you like/dislike so I can suggest a good movie to further boost your spirits."
-      elif (emotion == "sad" and not negated) or (emotion == "happy" and negated):
+        return "I'm happy to hear that!"
+      elif (emotion == "sad" and not negated) or (emotion == "happy" and negated): # sad
         return "I'm sorry to hear that. Maybe you can tell me what movies you like/dislike so I can suggest a good movie to cheer you up."
       
       return "Sorry, I don't understand. Tell me about a movie that you have seen?"
