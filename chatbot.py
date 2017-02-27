@@ -28,13 +28,15 @@ class Chatbot:
       self.name = 'moviebot'
       self.is_turbo = is_turbo
       self.Stemmer = PorterStemmer()
-      self.read_data()
       self.recommendations = []
       self.posPoints = 0
       self.negPoints = 0
       self.prevResponse = None
       self.responseContext = None
       self.potentialTitles = None
+      self.recNum = 1
+      self.recommendMode = False
+      self.read_data()
 
 
 
@@ -98,7 +100,7 @@ class Chatbot:
           databaseTitle = databaseTitle.strip()
           if not self.is_turbo:
             if movie_title == databaseTitle:
-              print(self.titles[title])
+              # print(self.titles[title])
               return title
           else: # disambiguation of movie titles for series and year ambiguities
             matchRegex = "(?:^| )%s(?:$| )" % movie_title
@@ -203,8 +205,14 @@ class Chatbot:
       movie_title = None
       movieIndex = None
 
-      if self.is_turbo == True:
-        response = 'processed %s in creative mode!!' % input
+      print(self.recommendMode, input)
+      if(self.recommendMode):
+        if(input == "Y"):
+          self.recNum += 1
+          recommendation = self.recommend()
+          return "I suggest you watch \"" + recommendation + "\". Would you like to hear another recommendation? [Y/N]"
+        else:
+          return "Nice chatting. Have a good one (Please type :quit)"
 
       if self.is_turbo and self.responseContext != None:  # special responses with context
         if self.responseContext == "disambiguation":
@@ -242,16 +250,10 @@ class Chatbot:
           movie_title = self.titles[movieIndex][0]
           movie_title = self.formatTitle(movie_title)
 
-      recommendedMode = False
       positivity = 0
       negativity = 0
       dataPoints = 0
 
-      # if(recommendedMode):
-      #   if(input == "Y"):
-      #     return "recommending another"
-      #   else:
-      #     return "Nice chatting. Have a good one"
 
       words = self.formatInput(input)
       for i, word in enumerate(words):
@@ -296,7 +298,7 @@ class Chatbot:
           elif (sentiment == "neg"):
             negativity += 1*boostScore
 
-          print(i, word, sentiment)
+          # print(word, sentiment)
 
       titleRating = 0
       if (positivity > negativity):
@@ -316,17 +318,17 @@ class Chatbot:
 
       ratingTuple = (movieIndex, titleRating)
       self.recommendations.append(ratingTuple)
-      print(len(self.recommendations), self.posPoints, self.negPoints)
+      # print(len(self.recommendations), self.posPoints, self.negPoints)
 
       if (len(self.recommendations) >= 5):
-        print(self.recommendations)
         if (self.posPoints == 0):
           response += "I need at least one positive review before making my assessment"
         elif(self.negPoints == 0):
           response += "I need at least one negative review before making my assessment"
         else:
+          print("Processing recommendation...")
           recommendation = self.recommend()
-          recommendMode = True
+          self.recommendMode = True
           response = "That's enough for me to make a recommendation. I suggest you watch \"" + recommendation + "\". Would you like to hear another recommendation? [Y/N]"
       else:
         response += "Tell me about another movie you have seen"
@@ -350,7 +352,7 @@ class Chatbot:
         newKey = self.Stemmer.stem(key.lower())
         self.sentiment[newKey] = self.sentiment.pop(key)
 
-      #print(self.recommend())
+      # print(self.recommend())
 
     def binarize(self):
       """Modifies the ratings matrix to make all of the ratings binary"""
@@ -374,9 +376,12 @@ class Chatbot:
       magnitude2 = 0
 
       for rating in vector1:
-        magnitude1 += rating*rating
+        magnitude1 += math.pow(rating,2)
       for rating in vector2:
-        magnitude2 += rating*rating
+        magnitude2 += math.pow(rating,2)
+
+      if (magnitude1 == 0 or magnitude2 == 0):
+        return 0
 
       magnitude1 = math.sqrt(magnitude1)
       magnitude2 = math.sqrt(magnitude2)
@@ -393,15 +398,25 @@ class Chatbot:
       # TODO: Implement a recommendation function that takes a user vector u
       # and outputs a list of movies recommended by the chatbot
 
-      self.recommendations = [(0, 1), (1580, 1), (7013, 1), (6282, 1), (3460, -1)]
+      # self.recommendations = [(5624, 1), (6272, 1), (6562, 1), (6809, 1), (1580, -1)] #like saw 
+
+      takenTitles = []
+      for pair in self.recommendations:
+        takenTitles.append(pair[0])
+
+      if(self.recommendMode):
+        recNum = self.recNum
+        for rating in self.allRatings:
+          movieIndex = rating[0]
+          if movieIndex not in takenTitles:
+            recNum -= 1
+            if (recNum == 0):
+              return self.titles[movieIndex][0]
 
       self.allRatings = []
       
       self.binarize()
 
-      takenTitles = []
-      for pair in self.recommendations:
-        takenTitles.append(pair[0])
 
       for movie in range(len(self.ratings)):
         numerator = 0
@@ -415,10 +430,13 @@ class Chatbot:
 
 
       self.allRatings = sorted(self.allRatings, key=lambda x: x[1], reverse=True)
+      recNum = self.recNum
       for rating in self.allRatings:
         movieIndex = rating[0]
         if movieIndex not in takenTitles:
-          return self.titles[movieIndex]
+          recNum -= 1
+          if (recNum == 0):
+            return self.titles[movieIndex][0]
 
       return "None"
 
