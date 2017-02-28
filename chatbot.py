@@ -231,6 +231,14 @@ class Chatbot:
 
         movie_title = movie_titles[0]
         movieIndex = self.validateTitle(movie_title)
+
+
+        for pair in self.recommendations:
+          if pair[0] == movieIndex:
+            return "You have already given a review on " + self.titles[movieIndex][0]
+
+
+
         if(movieIndex == -1):
           return "I'm not familar with the movie \"" + movie_title + "\". Could you try another movie?"
         elif self.is_turbo: # disambiguation of movie titles for series and year ambiguities
