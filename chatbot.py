@@ -106,7 +106,6 @@ class Chatbot:
             matchRegex = "(?:^| )%s(?:$| )" % movie_title
             matches = re.findall(matchRegex, databaseTitle)
             if len(matches) > 0:
-            #if movie_title == databaseTitle or movie_title in databaseTitle:
               titlesIndices.append(title)
               
       if self.is_turbo:
@@ -138,15 +137,19 @@ class Chatbot:
             movieIndex = index
             break
       else: # Using part of movie title for clarification
+        foundIndex = []
         for index in self.potentialTitles:
           movie = self.titles[index][0]
           if input in movie:
-            movie_title = re.sub('\(\d\d\d\d\)', '', movie)
-            movieIndex = index
-            break
+            foundIndex.append(index)
+        if len(foundIndex) != 1:
+          return (-1, "Please return a valid distinguishing choice.")
+        else:
+          movieIndex = foundIndex[0]
+          movie_title = re.sub('\(\d\d\d\d\)', '', self.titles[movieIndex][0])
       
       if movie_title == None:
-        return (-1, "Please return a valid choice or year")
+        return (-1, "Please return a valid choice or year.")
       else:
         input = re.sub('"([^"]*)"', '"'+movie_title.strip()+'"', self.prevResponse)
         self.responseContext = None
@@ -241,7 +244,7 @@ class Chatbot:
             choices = ""
             for i in range(0, len(movieIndex)-1):
               choices += str(self.titles[movieIndex[i]][0]).strip() + ", " # TODO: fix extra space before comma
-              choices += "or " + str(self.titles[movieIndex[len(movieIndex)-1]][0])
+            choices += "or " + str(self.titles[movieIndex[len(movieIndex)-1]][0])
             self.prevResponse = input
             self.responseContext = "disambiguation"
             self.potentialTitles = movieIndex
