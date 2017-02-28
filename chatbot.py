@@ -5,6 +5,7 @@
 # v.1.0.2
 # Original Python code by Ignacio Cases (@cases)
 # Ported to Java by Raghav Gupta (@rgupta93) and Jennifer Lu (@jenylu)
+# Assignment by Julian Vilalpando, Regina Nguyen, Thomas Liu
 ######################################################################
 import csv
 import math
@@ -208,7 +209,6 @@ class Chatbot:
       movie_title = None
       movieIndex = None
 
-      print(self.recommendMode, input)
       if(self.recommendMode):
         if(input == "Y"):
           self.recNum += 1
@@ -234,6 +234,14 @@ class Chatbot:
 
         movie_title = movie_titles[0]
         movieIndex = self.validateTitle(movie_title)
+
+
+        for pair in self.recommendations:
+          if pair[0] == movieIndex:
+            return "You have already given a review on " + self.titles[movieIndex][0]
+
+
+
         if(movieIndex == -1):
           return "I'm not familar with the movie \"" + movie_title + "\". Could you try another movie?"
         elif self.is_turbo: # disambiguation of movie titles for series and year ambiguities
@@ -273,6 +281,15 @@ class Chatbot:
           negated = False
           oneBack = i - 1
           twoBack = i - 2
+          oneForward = i + 1
+          twoForward = i + 2
+          if (oneForward >= 0 and oneForward < len(words)):
+            if (words[oneForward].lower() in ["really", "very"]):
+              booster2 = True
+          if (twoForward >= 0 and twoForward < len(words)):
+            if (words[twoForward].lower() in ["really", "very"]):
+              booster2 = True
+
           if (oneBack >= 0 and oneBack < len(words)):
             if any(neg in words[oneBack] for neg in ["not", "n't", "no"]):
               negated = True
@@ -301,7 +318,8 @@ class Chatbot:
           elif (sentiment == "neg"):
             negativity += 1*boostScore
 
-          # print(word, sentiment)
+          print(booster, booster2, boostScore)
+          print(word, positivity, negativity)
 
       titleRating = 0
       if (positivity > negativity):
