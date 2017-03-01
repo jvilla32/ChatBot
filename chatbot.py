@@ -256,7 +256,7 @@ class Chatbot:
             self.prevResponse = input
             self.responseContext = "disambiguation"
             self.potentialTitles = movieIndex
-            return "Did you mean " + choices + " (please provide the full name or the year)?"  #TODO: ask for clarification here, account for asking for year
+            return "Did you mean " + choices + " (please provide a distinguishing phrase or the year)?" 
         else:
           movie_title = self.titles[movieIndex][0]
           movie_title = self.formatTitle(movie_title)
