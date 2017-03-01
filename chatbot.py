@@ -36,6 +36,8 @@ class Chatbot:
       self.responseContext = None
       self.potentialTitles = None
       self.recNum = 1
+      self.antiRecMode = False
+      self.antiRecNum = 0
       self.recommendMode = False
       self.read_data()
 
@@ -209,13 +211,26 @@ class Chatbot:
       movie_title = None
       movieIndex = None
 
+      if(self.antiRecMode):
+        if (input == "Y"):
+          self.allRatings = sorted(self.allRatings, key=lambda x: x[1])
+          topFive = self.allRatings[:5]
+          response = "I'd recommend statying away from:\n"
+          for pair in topFive:
+            response += str(self.titles[pair[0]]) + "\n"
+          response += "Nice chatting. Have a good one (Please type :quit)"
+          return response
+        else:
+          return "Nice chatting. Have a good one (Please type :quit)"
+
       if(self.recommendMode):
         if(input == "Y"):
           self.recNum += 1
           recommendation = self.recommend()
           return "I suggest you watch \"" + recommendation + "\". Would you like to hear another recommendation? [Y/N]"
         else:
-          return "Nice chatting. Have a good one (Please type :quit)"
+          self.antiRecMode = True
+          return "Okay. Before you go, would you like to know which movies you should avoid? [Y/N]"
 
       if self.is_turbo and self.responseContext != None:  # special responses with context
         if self.responseContext == "disambiguation":
@@ -347,6 +362,7 @@ class Chatbot:
         elif(self.negPoints == 0):
           response += "I need at least one negative review before making my assessment"
         else:
+          print(response)
           print("Processing recommendation...")
           recommendation = self.recommend()
           self.recommendMode = True
@@ -436,6 +452,7 @@ class Chatbot:
 
       self.allRatings = []
       
+      
       self.binarize()
 
 
@@ -481,10 +498,14 @@ class Chatbot:
     #############################################################################
     def intro(self):
       return """
-      Your task is to implement the chatbot as detailed in the PA6 instructions.
-      Remember: in the starter mode, movie names will come in quotation marks and
-      expressions of sentiment will be simple!
-      Write here the description for your own chatbot!
+      Welcome to our chatbot. Our features are:
+      -Disallows repeat titles
+      -Offers multiple recommendations
+      -Checks for [love, hate, favorite] and [very, really] as features when deciphering sentiment (double to triple weighting for one or both features)
+      -Offers to display least compatible recommendations
+      -
+      -
+      -   
       """
 
 
