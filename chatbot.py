@@ -38,6 +38,8 @@ class Chatbot:
       self.responseContext = None
       self.potentialTitles = None
       self.recNum = 1
+      self.antiRecMode = False
+      self.antiRecNum = 0
       self.recommendMode = False
       self.read_data()
       self.userName = None
@@ -110,7 +112,6 @@ class Chatbot:
             matchRegex = "(?:^| )%s(?:$| )" % movie_title
             matches = re.findall(matchRegex, databaseTitle)
             if len(matches) > 0:
-            #if movie_title == databaseTitle or movie_title in databaseTitle:
               titlesIndices.append(title)
               
       if self.is_turbo:
@@ -142,15 +143,19 @@ class Chatbot:
             movieIndex = index
             break
       else: # Using part of movie title for clarification
+        foundIndex = []
         for index in self.potentialTitles:
           movie = self.titles[index][0]
           if input in movie:
-            movie_title = re.sub('\(\d\d\d\d\)', '', movie)
-            movieIndex = index
-            break
+            foundIndex.append(index)
+        if len(foundIndex) != 1:
+          return (-1, "Please return a valid distinguishing choice.")
+        else:
+          movieIndex = foundIndex[0]
+          movie_title = re.sub('\(\d\d\d\d\)', '', self.titles[movieIndex][0])
       
       if movie_title == None:
-        return (-1, "Please return a valid choice or year")
+        return (-1, "Please return a valid choice or year.")
       else:
         input = re.sub('"([^"]*)"', '"'+movie_title.strip()+'"', self.prevResponse)
         self.responseContext = None
@@ -425,13 +430,26 @@ class Chatbot:
       movie_title = None
       movieIndex = None
 
+      if(self.antiRecMode):
+        if (input == "Y"):
+          self.allRatings = sorted(self.allRatings, key=lambda x: x[1])
+          topFive = self.allRatings[:5]
+          response = "I'd recommend statying away from:\n"
+          for pair in topFive:
+            response += str(self.titles[pair[0]]) + "\n"
+          response += "Nice chatting. Have a good one (Please type :quit)"
+          return response
+        else:
+          return "Nice chatting. Have a good one (Please type :quit)"
+
       if(self.recommendMode):
         if(input == "Y"):
           self.recNum += 1
           recommendation = self.recommend()
           return "I suggest you watch \"" + recommendation + "\". Would you like to hear another recommendation? [Y/N]"
         else:
-          return "Nice chatting. Have a good one (Please type :quit)"
+          self.antiRecMode = True
+          return "Okay. Before you go, would you like to know which movies you should avoid? [Y/N]"
 
       if self.is_turbo and self.responseContext != None:  # special responses with context
         if self.responseContext == "disambiguation":
@@ -459,6 +477,14 @@ class Chatbot:
 
         movie_title = movie_titles[0]
         movieIndex = self.validateTitle(movie_title)
+
+
+        for pair in self.recommendations:
+          if pair[0] == movieIndex:
+            return "You have already given a review on " + self.titles[movieIndex][0]
+
+
+
         if(movieIndex == -1):
           return "I'm not familar with the movie \"" + movie_title + "\". Could you try another movie?"
         elif self.is_turbo: # disambiguation of movie titles for series and year ambiguities
@@ -469,7 +495,7 @@ class Chatbot:
             choices = ""
             for i in range(0, len(movieIndex)-1):
               choices += str(self.titles[movieIndex[i]][0]).strip() + ", " # TODO: fix extra space before comma
-              choices += "or " + str(self.titles[movieIndex[len(movieIndex)-1]][0])
+            choices += "or " + str(self.titles[movieIndex[len(movieIndex)-1]][0])
             self.prevResponse = input
             self.responseContext = "disambiguation"
             self.potentialTitles = movieIndex
@@ -564,6 +590,7 @@ class Chatbot:
         elif(self.negPoints == 0):
           response += "I need at least one negative review before making my assessment"
         else:
+          print(response)
           print("Processing recommendation...")
           recommendation = self.recommend()
           self.recommendMode = True
@@ -653,6 +680,7 @@ class Chatbot:
 
       self.allRatings = []
       
+      
       self.binarize()
 
 
@@ -697,6 +725,7 @@ class Chatbot:
     # 5. Write a description for your chatbot here!                             #
     #############################################################################
     def intro(self):
+<<<<<<< HEAD
       if self.is_turbo: #this is turbo mode
         return """
          _______  __   __  _______  _______  _______   __   __
@@ -721,6 +750,19 @@ class Chatbot:
         examples of movies you have liked, (i.e. I really liked "Pirates of the Caribbean").
         Have fun with the ChatBot!
         """
+=======
+      return """
+      Welcome to our chatbot. Our features are:
+      -Disallows repeat titles
+      -Offers multiple recommendations
+      -Checks for [love, hate, favorite] and [very, really] as features when deciphering sentiment (double to triple weighting for one or both features)
+      -Offers to display least compatible recommendations
+      -
+      -
+      -   
+      """
+
+>>>>>>> d22627b5c048384ef33c1b72c21f029e692b7dba
 
     #############################################################################
     # Auxiliary methods for the chatbot.                                        #
