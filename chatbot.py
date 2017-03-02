@@ -11,6 +11,8 @@ import csv
 import math
 import re
 import sys
+import random
+import string
 import math
 import pdb
 
@@ -40,6 +42,7 @@ class Chatbot:
       self.antiRecNum = 0
       self.recommendMode = False
       self.read_data()
+      self.userName = None
 
 
 
@@ -169,7 +172,6 @@ class Chatbot:
                         }
       emotion = None
       negated = False
-      booster = False
       words = input.split()
 
       for i, word in enumerate(words):
@@ -193,9 +195,226 @@ class Chatbot:
         return "I'm happy to hear that!"
       elif (emotion == "sad" and not negated) or (emotion == "happy" and negated): # sad
         return "I'm sorry to hear that. Maybe you can tell me what movies you like/dislike so I can suggest a good movie to cheer you up."
-      
-      return "Sorry, I don't understand. Tell me about a movie that you have seen?"
 
+      return False
+
+    def detectGreeting(self, input):
+      """Responds to arbitrary inputs appropriately"""
+      neutralGreetings = [ "hello", " hi ", "bonjour", " hey ", "hey there"]
+      enthusiasticGreetings = [ "yo ", "sup", "g'day", "howdy"]
+      timeGreetings = ["morning", "afternoon", "evening", "good morning", "good afternoon", "good evening"]
+      #print "DETECTED GREETING"
+
+      inputLine = input.lower()
+      inputLine = inputLine.translate(None, string.punctuation)
+      for greeting in neutralGreetings:
+        if greeting in inputLine and self.responseContext == None and self.userName == None:
+          self.responseContext = "arbitrary"
+          return "Hello there! It's great to meet you (: If you'd like, I'm always here to recommend movies!"
+        elif greeting in inputLine and self.responseContext == "arbitrary" and self.userName == None:
+          self.responseContext = "name"
+          return "Hey again! It seems you're not interested in a movie recommendation. What's your name then?"
+        elif greeting in inputLine and self.userName != None:
+          return "Hey there again, " + self.userName + "!"
+      
+      for greeting in enthusiasticGreetings:
+        if greeting in inputLine and self.responseContext == None and self.userName == None:
+          self.responseContext = "arbitrary"
+          return "Howdy! It's a pleasure to meet you (:"
+        elif greeting in inputLine and self.responseContext == "arbitrary" and self.userName == None:
+          self.responseContext = "name"
+          return "Howdy again! It seems you're not interested in a movie recommendation. What's your name then?"
+        elif greeting in inputLine and self.userName != None:
+          return "Howdy howdy, " + self.userName + "!"
+
+      for greeting in timeGreetings:
+        if "morning" in greeting and greeting in inputLine and self.responseContext == None and self.userName == None:
+          self.responseContext = "arbitrary"
+          return "It's a great morning! Good morning to you too (:"
+        elif "morning" in greeting and greeting in inputLine  and self.responseContext == "arbitrary" and self.userName == None:
+          self.responseContext = "name"
+          return "Good morning! It seems you're not interested in a movie recommendation. What's your name then?"
+        elif "morning" in greeting and greeting in inputLine  and self.userName != None:
+          return "Good morning again, " + self.userName + "!"
+
+        elif "afternoon" in greeting and greeting in inputLine and self.responseContext == None and self.userName == None:
+          self.responseContext = "arbitrary"
+          return "It's a beautiful afternoon! Good afternoon to you too (:"
+        elif "afternoon" in greeting and greeting in inputLine  and self.responseContext == "arbitrary" and self.userName == None:
+          self.responseContext = "name"
+          return "Good afternoon! It seems you're not interested in a movie recommendation. What's your name then?"
+        elif "afternoon" in greeting and greeting in inputLine  and self.userName != None:
+          return "Good afternoon again, " + self.userName + "!"
+
+        elif "evening" in greeting and greeting in inputLine and self.responseContext == None and self.userName == None:
+          self.responseContext = "arbitrary"
+          return "It's a wonderful evening! Good evening to you too (:"
+        elif "evening" in greeting and greeting in inputLine  and self.responseContext == "arbitrary" and self.userName == None:
+          self.responseContext = "name"
+          return "Good evening! It seems you're not interested in a movie recommendation. What's your name then?"
+        elif "evening" in greeting and greeting in inputLine  and self.userName != None:
+          return "Good evening again, " + self.userName + "!"
+
+      self.responseContext = None
+      return False # not a greeting
+
+    def processName(self, input):
+      nameInputRegexes = [r'my\sname\sis\s(\w+)',
+        r'im\s(\w+)',
+        r'i\sam\s(\w+)',
+        r'its\s(\w+)',
+        r'it\sis\s(\w+)',
+        r'my\snames\s(\w+)',
+        r'call\sme\s(\w+)',
+        r'you\scan\scall\sme\s(\w+)',
+        r'i\sgo\sby\s(\w+)']
+      nameInput = input.lower()
+      nameInput = nameInput.translate(None, string.punctuation)
+      detectedName = False
+      for regex in nameInputRegexes:
+        pattern = re.compile(regex, re.IGNORECASE)
+        result = pattern.match(nameInput)
+        if result != None:
+          detectedName = True
+          self.userName = result.group(1).title()
+          self.responseContext = None
+          return "Well, it's certainly nice to meet you, " + self.userName + "! Now, tell me about a movie you've seen."
+      nameInput = nameInput.split()
+      potentialName = nameInput[0]
+      nameList = open('data/first_names.txt').read()
+      if potentialName.upper() in nameList:
+        detectedName = True
+        self.responseContext = None
+        self.userName = potentialName.title()
+        return "Well, it's certainly nice to meet you, " + self.userName + "! Now, tell me about a movie you've seen."
+      if detectedName == False:
+          self.responseContext = None
+          return "Sorry, I didn't quite catch your name. Anyways, we can go back to talking about movies!"
+      return False
+
+    def detectQuestion(self, input):
+      questionWords = ["what", "who", "when", "where", "why", "how"]
+      if "?" in input:
+        return True
+      userInput = input.lower().split()
+      for word in questionWords:
+        if word in userInput:
+          return True
+      return False
+
+    def replaceWord(self, oldWord, newWord, string):
+      tokenized = string.split()
+      for index, token in enumerate(tokenized):
+        if token == oldWord:
+          tokenized[index] = newWord
+      newString = " ".join(str(word) for word in tokenized)
+      return newString
+
+    def processStructuredQuestion(self, input):
+      if self.detectQuestion(input) == False:
+        return False
+
+      structuredQuestionRegexes = {r'\s?what\sis\s([\w|\s]*)[\n|\.|\?|,]' : "is",
+        r'\s?can\syou\s([\w|\s]*)[\n|\.|\?|,]' : "can",
+        r'\s?would\syou\s([\w|\s]*)[\n|\.|\?|,]' : "would",
+        r'\s?what\sare\s([\w|\s]*)[\n|\.|\?|,]' : "are",
+        r'\s?could\syou\s([\w|\s]*)[\n|\.|\?|,]' : "could",
+        r'\s?who\sare\s([\w|\s]*)[\n|\.|\?|,]' : "are",
+        r'\s?who\sis\s([\w|\s]*)[\n|\.|\?|,]' : "is",
+        r'\s?where\sis\s([\w|\s]*)[\n|\.|\?|,]' : "is",
+        r'\s?what\sare\s([\w|\s]*)[\n|\.|\?|,]' : "are",
+        r'\s?when\sis\s([\w|\s]*)[\n|\.|\?|,]' : "is",
+        r'\s?when\sare\s([\w|\s]*)[\n|\.|\?|,]' : "are",
+        r'\s?why\sis\s([\w|\s]*)[\n|\.|\?|,]' : "is",
+        r'\s?why\sare\s([\w|\s]*)[\n|\.|\?|,]' : "are"}
+      inputQuestion = input.lower()
+      inputQuestion = " " + inputQuestion + "\n"
+
+      for regex, keyWord in structuredQuestionRegexes.iteritems():
+        pattern = re.compile(regex, re.IGNORECASE)
+        result = pattern.match(inputQuestion)
+        if result != None and self.userName == None:
+          phrase = result.group(1)
+
+          if "me" in phrase.split() and "you" not in phrase.split():
+            phrase = self.replaceWord("me", "you", phrase)
+          elif "you" in phrase.split() and "me" not in phrase.split():
+            phrase = self.replaceWord("you", "me", phrase)
+          if "my" in phrase.split() and "your" not in phrase.split():
+            phrase = self.replaceWord("my", "your", phrase)
+          elif "your" in phrase.split() and "my" not in phrase.split():
+            phrase = self.replaceWord("your", "my", phrase)
+          if "mine" in phrase.split() and "yours" not in phrase.split():
+            phrase = self.replaceWord("mine", "yours", phrase)
+          elif "yours" in phrase.split() and "mine" not in phrase.split():
+            phrase = self.replaceWord("yours", "mine", phrase)
+
+          phrase = phrase.strip()
+          if keyWord == "is":
+            return phrase.capitalize() + " isn't something I'm familiar with, sorry."
+          elif keyWord == "are":
+            return phrase.capitalize() + " aren't within my area of expertise, sorry about that. I'd love to talk about something else with you though!"
+          elif keyWord == "could":
+            return "To be honest, I could "+ phrase + ", but I'd just rather talk about something else."
+          elif keyWord == "would":
+            return "No, I wouldn't "+ phrase + " even if I could!"
+          elif keyWord == "can":
+            return "Sorry, I can't really "+ phrase + "."
+        if result != None and self.userName != None:
+          if keyWord == "is":
+            return phrase.capitalize() + " isn't something I'm qualified to answer, sorry " + self.userName + "."
+          elif keyWord == "are":
+            return phrase.capitalize() + " aren't within my area of expertise, sorry about that, " + self.userName + ". I'd love to talk about something else with you though!"
+          elif keyWord == "could":
+            return "To be honest," + self.userName + ", I could "+ phrase + ", but I'd just rather talk about something else."
+          elif keyWord == "would":
+            return "No," + self.userName + ", I wouldn't "+ phrase + " even if I could!"
+          elif keyWord == "can":
+            return "Sorry," + self.userName + ", I can't really "+ phrase + "."
+      return False
+
+    def processArbitraryInput(self, input):
+      """Responds to arbitrary inputs appropriately"""
+      if self.responseContext == "name":
+        response = self.processName(input)
+        if response != False:
+          return response
+      if self.detectQuestion(input) == False:
+        greeting = self.detectGreeting(input)
+        if greeting != False: #user gave a greeting
+          return greeting
+      structuredResponse = self.processStructuredQuestion(input)
+      if structuredResponse != False:
+        return structuredResponse
+
+      # for the case of everything else arbitrary..
+      catchAllResponses = [ "Hm, that's not really what I want to talk about right now, let's go back to movies!",
+                            "Ok, got it.",
+                            "I was thinking the same thing.",
+                            "Umm, okay.",
+                            "I've heard that before.",
+                            "Is that so?",
+                            "Well if you say so...",
+                            "I see, well I'll keep that in mind.",
+                            "Interesting... can you tell me more about that?"]
+      
+      questionResponses = [ "I'm not sure if I'm qualified to answer that question right now, I'm sorry.",
+                            "To be honest, I'm not entirely sure...",
+                            "It's hard to say.",
+                            "I may not be able to answer that, but I'm quite the expert on movies!",
+                            "That's a great question, but I'm probably not the right person to ask",
+                            "I can see why you'd want to know, but I just can't answer that.",
+                            "You've stumped me - I've got no clue!",
+                            "I don't actually know much about that - I'm more of an expert on movies.",
+                            "Hmm, I need to think about it.",
+                            "I'll get back to you about that one, but in the meantime we can talk about movies!" ]
+
+      userInput = input.lower().split()
+      if self.detectQuestion(input):
+        return random.choice(questionResponses)
+      else:
+        return random.choice(catchAllResponses)
+      return False
 
     def process(self, input):
       """Takes the input string from the REPL and call delegated functions
@@ -241,11 +460,20 @@ class Chatbot:
             movie_title = response[1]
             movieIndex = response[2]
             input = response[3]
+        else:
+          response = self.processArbitraryInput(input)
+          if response != False:
+            return response
+
       else: # treat response as normal
         movie_titles = re.findall('"([^"]*)"', input)
         response = self.validateNumTitles(movie_titles)
         if (response != ""):
-          return self.processSentiment(input)
+          foundSentiment = self.processSentiment(input)
+          if foundSentiment != False:
+            return foundSentiment
+          else: # did not find sentiment, input is something else
+            return self.processArbitraryInput(input)
 
         movie_title = movie_titles[0]
         movieIndex = self.validateTitle(movie_title)
@@ -498,14 +726,22 @@ class Chatbot:
     #############################################################################
     def intro(self):
       return """
-      Welcome to our chatbot. Our features are:
-      -Disallows repeat titles
-      -Offers multiple recommendations
-      -Checks for [love, hate, favorite] and [very, really] as features when deciphering sentiment (double to triple weighting for one or both features)
-      -Offers to display least compatible recommendations
-      -
-      -
-      -   
+      Hello there! Welcome to our chatbot! In the STARTER MODE of our ChatBot, it can handle
+      movie names that come in quotation marks and expressions of sentiment that are simple!
+      This basic version of the ChatBot will provide movie recommendations if you provide
+      examples of movies you have liked, (i.e. I really liked "Pirates of the Caribbean").
+
+      In our Creative / TURBO mode, we have implemented features that include:
+      --------------------------------------------------------------
+      - Handling Fine-Grained Sentiment Extraction (Checks for [love, hate, favorite] and [very, really] as features 
+        when deciphering sentiment (double to triple weighting for one or both features))
+      - Responding to arbitrary input
+      - Speaking very fluently 
+      - Disallowing repeat titles
+      - Disambiguating movie titles for series and year ambiguities
+      - Identifying and responding to emotion
+      - Offering multiple recommendations
+      - Offering to display least compatible recommendations
       """
 
 
