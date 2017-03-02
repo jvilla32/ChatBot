@@ -628,8 +628,8 @@ class Chatbot:
           elif (sentiment == "neg"):
             negativity += 1*boostScore
 
-          print(booster, booster2, boostScore)
-          print(word, positivity, negativity)
+          # print(booster, booster2, boostScore)
+          # print(word, positivity, negativity)
 
       titleRating = 0
       if (positivity > negativity):
@@ -708,10 +708,8 @@ class Chatbot:
       magnitude2 = 0
 
       for rating in vector1:
-        print(rating)
         magnitude1 += math.pow(rating,2)
       for rating in vector2:
-        print(rating)
         magnitude2 += math.pow(rating,2)
 
       if (magnitude1 == 0 or magnitude2 == 0):
