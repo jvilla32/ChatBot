@@ -558,6 +558,7 @@ class Chatbot:
           if len(movieIndex) == 1:
             movie_title = self.titles[movieIndex[0]][0]
             movie_title = self.formatTitle(movie_title)
+            movieIndex = movieIndex[0]
           else:
             choices = ""
             for i in range(0, len(movieIndex)-1):
