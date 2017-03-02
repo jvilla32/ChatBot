@@ -59,6 +59,11 @@ class Chatbot:
     # 2. Modules 2 and 3: extraction and transformation                         #
     #############################################################################
 
+    def resetContext(self):
+      self.responseContext = None
+      self.potentialTitles = None
+      self.prevResponse = None
+
     def validateNumTitles(self, movie_titles):
       """Checks that there is only one title mentioned"""
       if len(movie_titles) != 1:
@@ -106,7 +111,6 @@ class Chatbot:
           databaseTitle = databaseTitle.strip()
           if not self.is_turbo:
             if movie_title == databaseTitle:
-              # print(self.titles[title])
               return title
           else: # disambiguation of movie titles for series and year ambiguities
             matchRegex = "(?:^| )%s(?:$| )" % movie_title
@@ -158,9 +162,7 @@ class Chatbot:
         return (-1, "Please return a valid choice or year.")
       else:
         input = re.sub('"([^"]*)"', '"'+movie_title.strip()+'"', self.prevResponse)
-        self.responseContext = None
-        self.prevResponse = None
-        self.potentialTitles = None
+        self.resetContext()
       
       return (1, movie_title, movieIndex, input)
 
@@ -255,7 +257,7 @@ class Chatbot:
         elif "evening" in greeting and greeting in inputLine  and self.userName != None:
           return "Good evening again, " + self.userName + "!"
 
-      self.responseContext = None
+      self.resetContext()
       return False # not a greeting
 
     def processName(self, input):
@@ -277,19 +279,19 @@ class Chatbot:
         if result != None:
           detectedName = True
           self.userName = result.group(1).title()
-          self.responseContext = None
+          self.resetContext()
           return "Well, it's certainly nice to meet you, " + self.userName + "! Now, tell me about a movie you've seen."
       nameInput = nameInput.split()
       potentialName = nameInput[0]
       nameList = open('data/first_names.txt').read()
       if potentialName.upper() in nameList:
         detectedName = True
-        self.responseContext = None
+        self.resetContext()
         self.userName = potentialName.title()
         return "Well, it's certainly nice to meet you, " + self.userName + "! Now, tell me about a movie you've seen."
       if detectedName == False:
-          self.responseContext = None
-          return "Sorry, I didn't quite catch your name. Anyways, we can go back to talking about movies!"
+        self.resetContext()
+        return "Sorry, I didn't quite catch your name. Anyways, we can go back to talking about movies!"
       return False
 
     def detectQuestion(self, input):
@@ -416,6 +418,50 @@ class Chatbot:
         return random.choice(catchAllResponses)
       return False
 
+    def calculateEditDistance(self, misspelled, title):
+      """Uses Levenshtein algorithm on slide 14 of Edit Distance slides 
+      to calculate minimum edit distance between titles."""
+      height = len(misspelled) 
+      width = len(title)
+      distances = [[0 for i in range(width+1)] for j in range(height+1)]
+
+      # Initialization
+      for i in range(0, height+1):
+        distances[i][0] = i
+      for j in range(0, width+1):
+        distances[0][j] = j
+
+      # Recurrence relation
+      for i in range(1, height+1):
+        for j in range(1, width+1):
+          d = [distances[i-1][j] + 1, distances[i][j-1] + 1]
+          if i-1 > height or j-1 > width or misspelled[i-1] != title[j-1]:
+            d.append(distances[i-1][j-1] + 2)
+          else:
+            d.append(distances[i-1][j-1])
+          distances[i][j] = min(d)
+
+      return distances[height][width]
+
+    def spellCheckTitle(self, misspelled):
+      """Finds the movie title index with the minimum edit distance from 
+      the given title."""
+      minDistance = float('inf')
+      possTitleIndex = -1
+      for i in range(0, len(self.titles)):
+        title = self.titles[i][0]
+        title = re.sub('\(\d\d\d\d\)', '', title).strip()
+        if abs(len(misspelled) - len(title)) <= minDistance:
+          editDistance = self.calculateEditDistance(misspelled, title)
+          if editDistance < minDistance:
+            minDistance = editDistance
+            possTitleIndex = i
+      if minDistance < 3*len(misspelled.split()):   # If < about 3 errors per word in the title
+        return possTitleIndex
+      else:
+        return -1
+
+
     def process(self, input):
       """Takes the input string from the REPL and call delegated functions
       that
@@ -434,7 +480,7 @@ class Chatbot:
         if (input == "Y"):
           self.allRatings = sorted(self.allRatings, key=lambda x: x[1])
           topFive = self.allRatings[:5]
-          response = "I'd recommend statying away from:\n"
+          response = "I'd recommend staying away from:\n"
           for pair in topFive:
             response += str(self.titles[pair[0]]) + "\n"
           response += "Nice chatting. Have a good one (Please type :quit)"
@@ -457,10 +503,21 @@ class Chatbot:
           if response[0] == -1:
             return response[1]
           else:
-            movie_title = response[1]
+            movie_title = response[1].strip()
             movieIndex = response[2]
             input = response[3]
-        else:
+        elif self.responseContext == "spellCheck":
+          if input == "Y":  # If ChatBot suggested correct movie title spelling
+            movieIndex = self.potentialTitles
+            movie_title = self.titles[movieIndex][0]
+            input = re.sub('"([^"]*)"', '"'+movie_title.strip()+'"', self.prevResponse)
+            self.resetContext()
+          elif input == "N":
+            self.resetContext()
+            return "My mistake! Can you repeat your original statement, making sure the movie title is valid?"
+          else:
+            return "Please respond Y or N."
+        elif self.responseContext == "arbitrary":
           response = self.processArbitraryInput(input)
           if response != False:
             return response
@@ -470,7 +527,7 @@ class Chatbot:
         response = self.validateNumTitles(movie_titles)
         if (response != ""):
           foundSentiment = self.processSentiment(input)
-          if foundSentiment != False:
+          if foundSentiment:
             return foundSentiment
           else: # did not find sentiment, input is something else
             return self.processArbitraryInput(input)
@@ -478,15 +535,24 @@ class Chatbot:
         movie_title = movie_titles[0]
         movieIndex = self.validateTitle(movie_title)
 
-
         for pair in self.recommendations:
           if pair[0] == movieIndex:
             return "You have already given a review on " + self.titles[movieIndex][0]
 
-
-
         if(movieIndex == -1):
-          return "I'm not familar with the movie \"" + movie_title + "\". Could you try another movie?"
+          # Tries to spell check to see if there's a similar enough title
+          if self.is_turbo:
+            possTitleIndex = self.spellCheckTitle(movie_titles[0])
+            if possTitleIndex == -1:
+              return "I'm not familiar with the movie \"" + movie_title + "\". Could you try another movie?"
+            else:
+              possTitle = self.titles[possTitleIndex][0]
+              self.prevResponse = input
+              self.responseContext = "spellCheck"
+              self.potentialTitles = possTitleIndex
+              return "Did you mean \"" + possTitle + "\" [Y/N]?"
+          else:
+            return "I'm not familiar with the movie \"" + movie_title + "\". Could you try another movie?"
         elif self.is_turbo: # disambiguation of movie titles for series and year ambiguities
           if len(movieIndex) == 1:
             movie_title = self.titles[movieIndex[0]][0]
