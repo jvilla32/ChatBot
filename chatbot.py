@@ -113,7 +113,11 @@ class Chatbot:
             if movie_title == databaseTitle:
               return title
           else: # disambiguation of movie titles for series and year ambiguities
+<<<<<<< HEAD
+            matchRegex = "^%s(?:$| |:)" % movie_title
+=======
             matchRegex = "(?:^| )%s(?:$| )" % movie_title
+>>>>>>> 6b0cdd5904b143d65ac30491e0a37bcdf1b354a9
             matches = re.findall(matchRegex, databaseTitle)
             if len(matches) > 0:
               titlesIndices.append(title)
