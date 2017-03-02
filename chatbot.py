@@ -113,7 +113,7 @@ class Chatbot:
             if movie_title == databaseTitle:
               return title
           else: # disambiguation of movie titles for series and year ambiguities
-            matchRegex = "(?:^| )%s(?:$| |:)" % movie_title
+            matchRegex = "^%s(?:$| |:)" % movie_title
             matches = re.findall(matchRegex, databaseTitle)
             if len(matches) > 0:
               titlesIndices.append(title)
@@ -451,7 +451,6 @@ class Chatbot:
       for i in range(0, len(self.titles)):
         title = self.titles[i][0]
         title = re.sub('\(\d\d\d\d\)', '', title).strip()
-        # TODO: if misspelled in title then add to list with minDistance = diff between lengths?
         if abs(len(misspelled) - len(title)) <= minDistance:
           editDistance = self.calculateEditDistance(misspelled, title)
           if editDistance < minDistance:
