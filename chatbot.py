@@ -725,44 +725,25 @@ class Chatbot:
     # 5. Write a description for your chatbot here!                             #
     #############################################################################
     def intro(self):
-<<<<<<< HEAD
-      if self.is_turbo: #this is turbo mode
-        return """
-         _______  __   __  _______  _______  _______   __   __
-        |       ||  | |  ||   _   ||  _    ||       | |  | |  |
-        |_     _||  | |  ||  | |  || |_|   ||   _   | |  | |  |
-          |   |  |  | |  ||  |_|  ||       ||  | |  | |  | |  |
-          |   |  |  | |  ||      | |  _   | |  |_|  | |__| |__|
-          |   |  |  |_|  ||   _   || |_|   ||       |  __   __
-          |___|  |_______||__| |__||_______||_______| |__| |__|
-
-        Welcome to the TURBO MODE of our ChatBot! In this mode, the ChatBot can:
-        handle fine-grained sentiment extraction, disambiguate movie titles for series and year ambiguities, 
-        identify and respond to emotions, respond to arbitrary input, speak very fluently, and spell check movie titles
-        on top of the basic features of movie recommendations. 
-        Have funw ith our ChatBot!
-        """
-      else: # in starter mode
-        return """
-        Welcome to the STARTER MODE of our ChatBot! In this mode, the ChatBot can handle
-        movie names that come in quotation marks and expressions of sentiment that are simple!
-        This basic version of the ChatBot will provide movie recommendations if you provide
-        examples of movies you have liked, (i.e. I really liked "Pirates of the Caribbean").
-        Have fun with the ChatBot!
-        """
-=======
       return """
-      Welcome to our chatbot. Our features are:
-      -Disallows repeat titles
-      -Offers multiple recommendations
-      -Checks for [love, hate, favorite] and [very, really] as features when deciphering sentiment (double to triple weighting for one or both features)
-      -Offers to display least compatible recommendations
-      -
-      -
-      -   
+      Hello there! Welcome to our chatbot! In the STARTER MODE of our ChatBot, it can handle
+      movie names that come in quotation marks and expressions of sentiment that are simple!
+      This basic version of the ChatBot will provide movie recommendations if you provide
+      examples of movies you have liked, (i.e. I really liked "Pirates of the Caribbean").
+
+      In our Creative / TURBO mode, we have implemented features that include:
+      --------------------------------------------------------------
+      - Handling Fine-Grained Sentiment Extraction (Checks for [love, hate, favorite] and [very, really] as features 
+        when deciphering sentiment (double to triple weighting for one or both features))
+      - Responding to arbitrary input
+      - Speaking very fluently 
+      - Disallowing repeat titles
+      - Disambiguating movie titles for series and year ambiguities
+      - Identifying and responding to emotion
+      - Offering multiple recommendations
+      - Offering to display least compatible recommendations
       """
 
->>>>>>> d22627b5c048384ef33c1b72c21f029e692b7dba
 
     #############################################################################
     # Auxiliary methods for the chatbot.                                        #
