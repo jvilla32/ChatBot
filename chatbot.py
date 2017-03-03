@@ -113,7 +113,7 @@ class Chatbot:
             if movie_title == databaseTitle:
               return title
           else: # disambiguation of movie titles for series and year ambiguities
-            matchRegex = "(?:^| )%s(?:$| )" % movie_title
+            matchRegex = "^%s(?:$| |:)" % movie_title
             matches = re.findall(matchRegex, databaseTitle)
             if len(matches) > 0:
               titlesIndices.append(title)
@@ -557,6 +557,7 @@ class Chatbot:
           if len(movieIndex) == 1:
             movie_title = self.titles[movieIndex[0]][0]
             movie_title = self.formatTitle(movie_title)
+            movieIndex = movieIndex[0]
           else:
             choices = ""
             for i in range(0, len(movieIndex)-1):
@@ -627,8 +628,8 @@ class Chatbot:
           elif (sentiment == "neg"):
             negativity += 1*boostScore
 
-          print(booster, booster2, boostScore)
-          print(word, positivity, negativity)
+          # print(booster, booster2, boostScore)
+          # print(word, positivity, negativity)
 
       titleRating = 0
       if (positivity > negativity):
