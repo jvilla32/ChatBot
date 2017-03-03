@@ -595,8 +595,10 @@ class Chatbot:
             foundSentiment = self.processSentiment(input)
             if foundSentiment:
               return foundSentiment
-            else: # did not find sentiment, input is something else
+            elif self.is_turbo: # did not find sentiment, input is something else
               return self.processArbitraryInput(input)
+            else:
+              return self.checkForPotentialMovie(input)
 
         movie_title = movie_titles[0]
         movieIndex = self.validateTitle(movie_title)
@@ -860,10 +862,17 @@ class Chatbot:
           Checks for [love, hate, favorite] and [very, really] as features when deciphering 
           sentiment (double to triple weighting for one or both features)).
       - Responding to arbitrary input
+          Gives a range of plausible catch-all answers to inputs that are statements. Has strategies in place to respond
+          appropriately (using what was asked and said by the user) to structured questions including: what is / can you / would you / what are / who are / 
+          who is / where is / when is / when are / why is / will you / did you / why are...
       - Spell checking
           If you incorrectly spell the basic movie title (works for "Titnic" but now "Harry Ptter" 
           which is not a standalone movie title).
-      - Speaking very fluently 
+      - Speaking very fluently
+          Has the capacity to learn the user's name, to make it feel more like talking to a friend. If given the user's name, the bot will remember 
+          the name and use it to give more persoanlized responses thereafter. The bot can also detect / distinguish between  most questions and 
+          statements (will respond appropriately), and it can also detect a number of standard greetings. Furthermore, it 
+          maintains conversation organically by giving neutral comments or asking further questions. 
       - Disallowing repeat titles
           Checks to see if you have already expressed your opinion on a movie.
       - Disambiguating movie titles for series and year ambiguities 
