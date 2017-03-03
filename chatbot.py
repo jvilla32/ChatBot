@@ -265,6 +265,37 @@ class Chatbot:
       self.resetContext()
       return False # not a greeting
 
+    def checkName(self, input):
+      #print "CHECKING NAME!!!"
+      nameInputRegexes = [r'my\sname\sis\s(\w+)',
+        r'im\s(\w+)',
+        r'i\sam\s(\w+)',
+        r'my\snames\s(\w+)',
+        r'call\sme\s(\w+)',
+        r'you\scan\scall\sme\s(\w+)',
+        r'i\sgo\sby\s(\w+)']
+      nameInput = input.lower()
+      nameInput = nameInput.translate(None, string.punctuation)
+      for regex in nameInputRegexes:
+        pattern = re.compile(regex, re.IGNORECASE)
+        result = pattern.search(nameInput)
+        if result != None:
+          #print "FOUND SOMETHING!"
+          nameList = open('data/first_names.txt').read()
+          potentialName = result.group(1).title()
+          if potentialName.upper() in nameList:
+            if self.userName == None:
+              self.userName = potentialName.capitalize()
+              self.resetContext()
+              return "Well, it's certainly nice to meet you, " + self.userName + "! Now tell me something, or alternatively tell me about a movie you've seen."
+            elif self.userName != None and self.userName != potentialName:
+              self.userName = potentialName.capitalize()
+              self.resetContext()
+              return "Oh, is that what you'd prefer me to call you? Well, hello there " + self.userName + "."
+            elif self.userName != None and self.userName == potentialName:
+              return "You've already told me that's your name! I don't forget (: Hi again, " + self.userName + "."
+      return False
+
     def processName(self, input):
       nameInputRegexes = [r'my\sname\sis\s(\w+)',
         r'im\s(\w+)',
@@ -433,6 +464,9 @@ class Chatbot:
       quickCheck = self.checkForPotentialMovie(input)
       if quickCheck != False:
         return quickCheck
+      detectName = self.checkName(input)
+      if detectName != False:
+        return detectName
       if self.responseContext == "name":
         response = self.processName(input)
         if response != False:
