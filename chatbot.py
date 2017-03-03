@@ -205,7 +205,6 @@ class Chatbot:
       neutralGreetings = [ "hello", " hi ", "bonjour", " hey ", "hey there"]
       enthusiasticGreetings = [ "yo ", "sup", "g'day", "howdy"]
       timeGreetings = ["morning", "afternoon", "evening", "good morning", "good afternoon", "good evening"]
-      #print "DETECTED GREETING"
 
       inputLine = input.lower()
       inputLine = inputLine.translate(None, string.punctuation)
@@ -628,9 +627,6 @@ class Chatbot:
           elif (sentiment == "neg"):
             negativity += 1*boostScore
 
-          # print(booster, booster2, boostScore)
-          # print(word, positivity, negativity)
-
       titleRating = 0
       if (positivity > negativity):
         self.posPoints += 1
@@ -649,7 +645,6 @@ class Chatbot:
 
       ratingTuple = (movieIndex, titleRating)
       self.recommendations.append(ratingTuple)
-      # print(len(self.recommendations), self.posPoints, self.negPoints)
 
       if (len(self.recommendations) >= 5):
         if (self.posPoints == 0):
@@ -683,8 +678,6 @@ class Chatbot:
       for key in self.sentiment.keys():
         newKey = self.Stemmer.stem(key.lower())
         self.sentiment[newKey] = self.sentiment.pop(key)
-
-      # print(self.recommend())
 
     def binarize(self):
       """Modifies the ratings matrix to make all of the ratings binary"""
@@ -793,22 +786,29 @@ class Chatbot:
     #############################################################################
     def intro(self):
       return """
-      Hello there! Welcome to our chatbot! In the STARTER MODE of our ChatBot, it can handle
-      movie names that come in quotation marks and expressions of sentiment that are simple!
-      This basic version of the ChatBot will provide movie recommendations if you provide
-      examples of movies you have liked, (i.e. I really liked "Pirates of the Caribbean").
-
-      In our Creative / TURBO mode, we have implemented features that include:
+      Hello there! Welcome to our chatbot! In our Creative / TURBO mode, we have implemented 
+      features that include:
       --------------------------------------------------------------
-      - Handling Fine-Grained Sentiment Extraction (Checks for [love, hate, favorite] and [very, really] as features 
-        when deciphering sentiment (double to triple weighting for one or both features))
+      - Handling Fine-Grained Sentiment Extraction 
+          Checks for [love, hate, favorite] and [very, really] as features when deciphering 
+          sentiment (double to triple weighting for one or both features)).
       - Responding to arbitrary input
+      - Spell checking
+          If you incorrectly spell the basic movie title (works for "Titnic" but now "Harry Ptter" 
+          which is not a standalone movie title).
       - Speaking very fluently 
       - Disallowing repeat titles
-      - Disambiguating movie titles for series and year ambiguities
-      - Identifying and responding to emotion
+          Checks to see if you have already expressed your opinion on a movie.
+      - Disambiguating movie titles for series and year ambiguities 
+          Prompts you for a clarifying part of the movie name or year, like if you type in I like 
+          "Harry Potter" it will give the list of clarifying choices)
+      - Identifying and responding to emotion 
+          Can detect anger, sadness, and happiness in statements without movie titles.
       - Offering multiple recommendations
+          Asks if you want another recommendation after you receive your first one.
       - Offering to display least compatible recommendations
+          Asks if you want to see five movies that you will probably dislike after you have received 
+          your first recommendation.
       """
 
 
