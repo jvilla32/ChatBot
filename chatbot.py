@@ -307,8 +307,7 @@ class Chatbot:
       for word in questionWords:
         if word in userInput:
           return True
-      if "can you" in userInput or "could you" in userInput or "will you" in userInput or "would you" in userInput
-          or "did you" in userInput:
+      if "can you" in input.lower() or "could you" in input.lower() or "will you" in input.lower() or "would you" in input.lower() or "did you" in input.lower():
         return True
       return False
 
