@@ -12,6 +12,7 @@ import math
 import re
 import sys
 import random
+import linecache
 import string
 import math
 import pdb
@@ -43,8 +44,8 @@ class Chatbot:
       self.recommendMode = False
       self.read_data()
       self.userName = None
-
-
+      self.arbitraryInputCount = 0
+      self.triviaIndexTracker = 1
 
     def greeting(self):
       greeting_message = "Hi! I'm MovieBot! I'm going to recommend a movie to you. Tell me about a movie that you have seen."
@@ -131,7 +132,6 @@ class Chatbot:
       words = re.sub('[.,!]', '', words)
       return words.split()
             
-
     def processDisambiguation(self, input):
       """Processes the response in context that it is disambiguating a previous 
       response. Looks for clarifying year or title."""
@@ -555,6 +555,13 @@ class Chatbot:
       else:
         return -1
 
+    def checkYesNoResponse(self, input):
+      inputLine = input.lower().split()
+      if "yes" in inputLine or "Y" in inputLine or "yeah" in inputLine or "yup" in inputLine or "ya" in inputLine or "yea" in inputLine:
+        if ("no" not in inputLine and "nope" not in inputLine and "nah" not in inputLine and "never" not in inputLine and "not" not in inputLine):
+          return True
+      else:
+        return False 
 
     def process(self, input):
       """Takes the input string from the REPL and call delegated functions
@@ -611,7 +618,7 @@ class Chatbot:
             return "My mistake! Can you repeat your original statement, making sure the movie title is valid?"
           else:
             return "Please respond Y or N."
-        elif self.responseContext == "arbitrary" or "name":
+        elif self.responseContext == "arbitrary" or self.responseContext == "name":
           response = self.processArbitraryInput(input)
           if response != False:
             return response
@@ -897,8 +904,7 @@ class Chatbot:
           sentiment (double to triple weighting for one or both features)).
       - Responding to arbitrary input
           Gives a range of plausible catch-all answers to inputs that are statements. Has strategies in place to respond
-          appropriately (using what was asked and said by the user) to structured questions including: what is / can you / would you / what are / who are / 
-          who is / where is / when is / when are / why is / will you / did you / why are...
+          appropriately (using what was asked and said by the user) to structured questions.
       - Spell checking
           If you incorrectly spell the basic movie title (works for "Titnic" but now "Harry Ptter" 
           which is not a standalone movie title).
@@ -919,6 +925,26 @@ class Chatbot:
       - Offering to display least compatible recommendations
           Asks if you want to see five movies that you will probably dislike after you have received 
           your first recommendation.
+
+      Elaborating on other features:
+      - Name learning and recognition
+          The user can tell the bot their name, and the bot will remember the name and use it in subseqent responses. Furthermore, the
+          user can also change their name throughout the conversation, for example:
+            user: Nice to meet you, my name is Thomas
+            bot: Well, it's certainly nice to meet you, Thomas! Now tell me something, or alternatively tell me about a movie you've seen.
+            user: Actually, you can call me Tom
+            bot: Oh, is that what you'd prefer me to call you? Well, hello there Tom. 
+      - Robust question answering capacities
+          The bot is able to process structured questions including: what is / can you / would you / what are / who are / 
+          who is / where is / when is / when are / why is / will you / did you / why are... It achieves this by also using parts of
+          the input question, and is able to respond with proper grammar if give pronouns in the input. For example: 
+            user: Can you give me your phone number?
+            bot: Sorry, I can't really give you my number.
+            user: What is the meaning of your life?
+            bot: The meaning of my life isn't something I'm qualified to speak about, sorry.
+            user: Where is the best restaurant in San Francisco?
+            bot: The best restaurant in San Srancisco isn't something I'm qualified to speak about, sorry.
+
       """
 
 
